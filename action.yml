@@ -130,13 +130,13 @@ runs:
         # Run validation
         case "${{ inputs.package-manager }}" in
           pnpm)
-            pnpm dlx mcpb validate "$MANIFEST"
+            pnpm dlx @anthropic-ai/mcpb validate "$MANIFEST"
             ;;
           npm)
-            npx mcpb validate "$MANIFEST"
+            npx @anthropic-ai/mcpb validate "$MANIFEST"
             ;;
           yarn)
-            yarn dlx mcpb validate "$MANIFEST"
+            yarn dlx @anthropic-ai/mcpb validate "$MANIFEST"
             ;;
         esac
 
@@ -170,13 +170,13 @@ runs:
         # Run build
         case "${{ inputs.package-manager }}" in
           pnpm)
-            pnpm dlx mcpb pack . "$OUTPUT"
+            pnpm dlx @anthropic-ai/mcpb pack . "$OUTPUT"
             ;;
           npm)
-            npx mcpb pack . "$OUTPUT"
+            npx @anthropic-ai/mcpb pack . "$OUTPUT"
             ;;
           yarn)
-            yarn dlx mcpb pack . "$OUTPUT"
+            yarn dlx @anthropic-ai/mcpb pack . "$OUTPUT"
             ;;
         esac
 
