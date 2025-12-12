@@ -1,0 +1,192 @@
+name: 'MCPB Build Action'
+description: 'Build Model Context Protocol (MCP) packages using the MCPB CLI'
+author: 'entro314-labs'
+
+branding:
+  icon: 'package'
+  color: 'purple'
+
+inputs:
+  manifest:
+    description: 'Path to manifest.json file'
+    required: false
+    default: 'manifest.json'
+  output:
+    description: 'Output filename for the .mcpb package (without extension uses manifest name)'
+    required: false
+    default: ''
+  working-directory:
+    description: 'Working directory for the build'
+    required: false
+    default: '.'
+  validate-only:
+    description: 'Only validate the manifest without building'
+    required: false
+    default: 'false'
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '22'
+  package-manager:
+    description: 'Package manager to use (pnpm, npm, yarn)'
+    required: false
+    default: 'pnpm'
+  upload-artifact:
+    description: 'Upload the built package as a workflow artifact'
+    required: false
+    default: 'true'
+  artifact-name:
+    description: 'Name for the uploaded artifact'
+    required: false
+    default: 'mcpb-package'
+  artifact-retention-days:
+    description: 'Number of days to retain the artifact'
+    required: false
+    default: '30'
+
+outputs:
+  package-path:
+    description: 'Path to the built .mcpb package'
+    value: ${{ steps.build.outputs.package-path }}
+  package-name:
+    description: 'Name of the built package'
+    value: ${{ steps.build.outputs.package-name }}
+  package-version:
+    description: 'Version of the built package'
+    value: ${{ steps.build.outputs.package-version }}
+  package-size:
+    description: 'Size of the built package'
+    value: ${{ steps.build.outputs.package-size }}
+  shasum:
+    description: 'SHA checksum of the package'
+    value: ${{ steps.build.outputs.shasum }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup pnpm
+      if: inputs.package-manager == 'pnpm'
+      uses: pnpm/action-setup@v4
+      with:
+        version: latest
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: ${{ inputs.package-manager }}
+
+    - name: Install MCPB CLI
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "::group::Installing MCPB CLI"
+        case "${{ inputs.package-manager }}" in
+          pnpm)
+            pnpm add -g @anthropic-ai/mcpb || pnpm dlx @anthropic-ai/mcpb --version
+            ;;
+          npm)
+            npm install -g @anthropic-ai/mcpb
+            ;;
+          yarn)
+            yarn global add @anthropic-ai/mcpb
+            ;;
+        esac
+        echo "::endgroup::"
+
+    - name: Validate manifest
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "::group::Validating manifest"
+
+        MANIFEST="${{ inputs.manifest }}"
+
+        if [ ! -f "$MANIFEST" ]; then
+          echo "::error::Manifest file not found: $MANIFEST"
+          exit 1
+        fi
+
+        echo "Manifest file: $MANIFEST"
+
+        # Run validation
+        case "${{ inputs.package-manager }}" in
+          pnpm)
+            pnpm dlx mcpb validate "$MANIFEST"
+            ;;
+          npm)
+            npx mcpb validate "$MANIFEST"
+            ;;
+          yarn)
+            yarn dlx mcpb validate "$MANIFEST"
+            ;;
+        esac
+
+        echo "::endgroup::"
+
+    - name: Build MCPB package
+      id: build
+      if: inputs.validate-only != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "::group::Building MCPB package"
+
+        MANIFEST="${{ inputs.manifest }}"
+        OUTPUT="${{ inputs.output }}"
+
+        # Extract package info from manifest
+        PACKAGE_NAME=$(jq -r '.name' "$MANIFEST")
+        PACKAGE_VERSION=$(jq -r '.version' "$MANIFEST")
+
+        # Determine output filename
+        if [ -z "$OUTPUT" ]; then
+          OUTPUT="${PACKAGE_NAME}.mcpb"
+        elif [[ "$OUTPUT" != *.mcpb ]]; then
+          OUTPUT="${OUTPUT}.mcpb"
+        fi
+
+        echo "Building: $PACKAGE_NAME@$PACKAGE_VERSION"
+        echo "Output: $OUTPUT"
+
+        # Run build
+        case "${{ inputs.package-manager }}" in
+          pnpm)
+            pnpm dlx mcpb pack . "$OUTPUT"
+            ;;
+          npm)
+            npx mcpb pack . "$OUTPUT"
+            ;;
+          yarn)
+            yarn dlx mcpb pack . "$OUTPUT"
+            ;;
+        esac
+
+        # Get package info
+        PACKAGE_PATH="$(pwd)/$OUTPUT"
+        PACKAGE_SIZE=$(du -h "$OUTPUT" | cut -f1)
+        SHASUM=$(shasum -a 256 "$OUTPUT" | cut -d' ' -f1)
+
+        # Set outputs
+        echo "package-path=$PACKAGE_PATH" >> $GITHUB_OUTPUT
+        echo "package-name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+        echo "package-version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+        echo "package-size=$PACKAGE_SIZE" >> $GITHUB_OUTPUT
+        echo "shasum=$SHASUM" >> $GITHUB_OUTPUT
+
+        echo ""
+        echo "Build complete!"
+        echo "  Package: $PACKAGE_NAME@$PACKAGE_VERSION"
+        echo "  File: $OUTPUT"
+        echo "  Size: $PACKAGE_SIZE"
+        echo "  SHA256: $SHASUM"
+
+        echo "::endgroup::"
+
+    - name: Upload artifact
+      if: inputs.validate-only != 'true' && inputs.upload-artifact == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.working-directory }}/*.mcpb
+        retention-days: ${{ inputs.artifact-retention-days }}

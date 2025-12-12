@@ -1,0 +1,167 @@
+name: Test Action
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-validation:
+    name: Test Manifest Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create test manifest
+        run: |
+          cat > manifest.json << 'EOF'
+          {
+            "manifest_version": "0.3",
+            "name": "test-mcp-server",
+            "display_name": "Test MCP Server",
+            "version": "1.0.0",
+            "description": "A test MCP server for action validation",
+            "author": {
+              "name": "entro314-labs"
+            },
+            "server": {
+              "type": "node",
+              "entry_point": "index.js"
+            },
+            "tools": [],
+            "license": "MIT"
+          }
+          EOF
+          echo "console.log('test')" > index.js
+
+      - name: Test validate-only mode
+        uses: ./
+        with:
+          validate-only: 'true'
+
+  test-build-pnpm:
+    name: Test Build (pnpm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create test manifest
+        run: |
+          cat > manifest.json << 'EOF'
+          {
+            "manifest_version": "0.3",
+            "name": "test-mcp-server",
+            "display_name": "Test MCP Server",
+            "version": "1.0.0",
+            "description": "A test MCP server for action validation",
+            "author": {
+              "name": "entro314-labs"
+            },
+            "server": {
+              "type": "node",
+              "entry_point": "index.js"
+            },
+            "tools": [],
+            "license": "MIT"
+          }
+          EOF
+          echo "console.log('test')" > index.js
+
+      - name: Build with pnpm
+        id: build
+        uses: ./
+        with:
+          package-manager: 'pnpm'
+          upload-artifact: 'true'
+          artifact-name: 'test-package-pnpm'
+
+      - name: Verify outputs
+        run: |
+          echo "Package name: ${{ steps.build.outputs.package-name }}"
+          echo "Package version: ${{ steps.build.outputs.package-version }}"
+          echo "Package size: ${{ steps.build.outputs.package-size }}"
+          echo "SHA256: ${{ steps.build.outputs.shasum }}"
+          test -f "test-mcp-server.mcpb" || exit 1
+          echo "Build successful!"
+
+  test-build-npm:
+    name: Test Build (npm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create test manifest
+        run: |
+          cat > manifest.json << 'EOF'
+          {
+            "manifest_version": "0.3",
+            "name": "test-mcp-server-npm",
+            "display_name": "Test MCP Server",
+            "version": "1.0.0",
+            "description": "A test MCP server for action validation",
+            "author": {
+              "name": "entro314-labs"
+            },
+            "server": {
+              "type": "node",
+              "entry_point": "index.js"
+            },
+            "tools": [],
+            "license": "MIT"
+          }
+          EOF
+          echo "console.log('test')" > index.js
+
+      - name: Build with npm
+        id: build
+        uses: ./
+        with:
+          package-manager: 'npm'
+          upload-artifact: 'false'
+
+      - name: Verify outputs
+        run: |
+          test -f "test-mcp-server-npm.mcpb" || exit 1
+          echo "Build successful!"
+
+  test-custom-output:
+    name: Test Custom Output Name
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create test manifest
+        run: |
+          cat > manifest.json << 'EOF'
+          {
+            "manifest_version": "0.3",
+            "name": "test-mcp-server",
+            "display_name": "Test MCP Server",
+            "version": "2.0.0",
+            "description": "A test MCP server for action validation",
+            "author": {
+              "name": "entro314-labs"
+            },
+            "server": {
+              "type": "node",
+              "entry_point": "index.js"
+            },
+            "tools": [],
+            "license": "MIT"
+          }
+          EOF
+          echo "console.log('test')" > index.js
+
+      - name: Build with custom output name
+        id: build
+        uses: ./
+        with:
+          output: 'custom-package-name'
+          upload-artifact: 'false'
+
+      - name: Verify custom output
+        run: |
+          test -f "custom-package-name.mcpb" || exit 1
+          echo "Custom output name works!"
