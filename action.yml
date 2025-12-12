@@ -70,11 +70,29 @@ runs:
       with:
         version: latest
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Check for lock file
+      id: check-lockfile
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ -f "pnpm-lock.yaml" ] || [ -f "package-lock.json" ] || [ -f "yarn.lock" ] || [ -f "npm-shrinkwrap.json" ]; then
+          echo "has-lockfile=true" >> $GITHUB_OUTPUT
+        else
+          echo "has-lockfile=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Setup Node.js (with cache)
+      if: steps.check-lockfile.outputs.has-lockfile == 'true'
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
         cache: ${{ inputs.package-manager }}
+
+    - name: Setup Node.js (without cache)
+      if: steps.check-lockfile.outputs.has-lockfile != 'true'
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
 
     - name: Install MCPB CLI
       shell: bash

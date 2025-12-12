@@ -12,7 +12,7 @@ jobs:
     name: Test Manifest Validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Create test manifest
         run: |
@@ -45,7 +45,7 @@ jobs:
     name: Test Build (pnpm)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Create test manifest
         run: |
@@ -90,7 +90,7 @@ jobs:
     name: Test Build (npm)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Create test manifest
         run: |
@@ -130,7 +130,7 @@ jobs:
     name: Test Custom Output Name
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Create test manifest
         run: |
