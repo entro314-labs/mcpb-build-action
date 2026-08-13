@@ -157,7 +157,7 @@ jobs:
 
 ## Requirements
 
-- Node.js 22+ (configurable via `node-version` input)
+- Node.js 24.19.0+ (configurable via `node-version` input)
 - A valid `manifest.json` following the [MCPB specification](https://github.com/anthropics/anthropic-cookbook/tree/main/misc/mcpb)
 - One of: pnpm, npm, or yarn
 
