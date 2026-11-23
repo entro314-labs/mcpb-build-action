@@ -94,6 +94,58 @@ jobs:
           test -f "test-mcp-server.mcpb" || exit 1
           echo "Build successful!"
 
+  test-build-pnpm-pinned:
+    name: Test Build (pnpm pinned by packageManager)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create test manifest
+        run: |
+          cat > manifest.json << 'EOF'
+          {
+            "manifest_version": "0.3",
+            "name": "test-mcp-server-pinned",
+            "display_name": "Test MCP Server",
+            "version": "1.0.0",
+            "description": "A test MCP server for action validation",
+            "author": {
+              "name": "entro314-labs"
+            },
+            "server": {
+              "type": "node",
+              "entry_point": "index.js",
+              "mcp_config": {
+                "command": "node",
+                "args": ["${__dirname}/index.js"]
+              }
+            },
+            "tools": [],
+            "license": "MIT"
+          }
+          EOF
+          echo "console.log('test')" > index.js
+          cat > package.json << 'EOF'
+          {
+            "name": "test-mcp-server-pinned",
+            "version": "1.0.0",
+            "private": true,
+            "packageManager": "pnpm@12.23.0"
+          }
+          EOF
+
+      - name: Build with pnpm
+        uses: ./
+        with:
+          package-manager: 'pnpm'
+          upload-artifact: 'false'
+
+      - name: Verify outputs
+        run: |
+          test "$(pnpm --version)" = "12.23.0" || exit 1
+          test -f "test-mcp-server-pinned.mcpb" || exit 1
+          echo "Build successful!"
+
   test-build-npm:
     name: Test Build (npm)
     runs-on: ubuntu-latest

@@ -64,11 +64,25 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    # pnpm/action-setup rejects an explicit version when the repository's package.json already
+    # pins pnpm, so `latest` is only requested when nothing is pinned.
+    - name: Resolve pnpm version
+      id: pnpm-version
+      if: inputs.package-manager == 'pnpm'
+      shell: bash
+      run: |
+        PKG="$GITHUB_WORKSPACE/package.json"
+        if [ -f "$PKG" ] && jq -e '((.packageManager // "") | startswith("pnpm@")) or (.devEngines.packageManager.name == "pnpm")' "$PKG" > /dev/null; then
+          echo "version=" >> "$GITHUB_OUTPUT"
+        else
+          echo "version=latest" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Setup pnpm
       if: inputs.package-manager == 'pnpm'
       uses: pnpm/action-setup@v4
       with:
-        version: latest
+        version: ${{ steps.pnpm-version.outputs.version }}
 
     - name: Check for lock file
       id: check-lockfile
