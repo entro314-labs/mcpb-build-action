@@ -72,7 +72,7 @@ runs:
       shell: bash
       run: |
         PKG="$GITHUB_WORKSPACE/package.json"
-        if [ -f "$PKG" ] && jq -e '((.packageManager // "") | startswith("pnpm@")) or (.devEngines.packageManager.name == "pnpm")' "$PKG" > /dev/null; then
+        if [ -f "$PKG" ] && jq -e '((.packageManager // "") | startswith("pnpm@")) or (.devEngines.packageManager.name == "pnpm" and (.devEngines.packageManager.version // "") != "")' "$PKG" > /dev/null; then
           echo "version=" >> "$GITHUB_OUTPUT"
         else
           echo "version=latest" >> "$GITHUB_OUTPUT"
