@@ -33,7 +33,7 @@ A GitHub Action for building Model Context Protocol (MCP) packages using the MCP
     manifest: 'manifest.json'
     output: 'my-mcp-server'
     package-manager: 'pnpm'
-    node-version: '22'
+    node-version: '24'
 
 - name: Use Build Outputs
   run: |
@@ -68,7 +68,7 @@ A GitHub Action for building Model Context Protocol (MCP) packages using the MCP
 | `output` | Output filename for the .mcpb package (without extension) | No | Uses manifest name |
 | `working-directory` | Working directory for the build | No | `.` |
 | `validate-only` | Only validate the manifest without building | No | `false` |
-| `node-version` | Node.js version to use | No | `22` |
+| `node-version` | Node.js version to use | No | `24` |
 | `package-manager` | Package manager to use (pnpm, npm, yarn) | No | `pnpm` |
 | `upload-artifact` | Upload the built package as a workflow artifact | No | `true` |
 | `artifact-name` | Name for the uploaded artifact | No | `mcpb-package` |
